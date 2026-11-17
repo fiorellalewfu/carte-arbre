@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#163445">
+<title>Merci d’éclairer le chemin · Le Centre de réfugiés</title>
+<style>
+@font-face{font-family:"TRC Nunito";font-weight:500;font-style:normal;font-display:swap;src:url(fonts/nunito-500.woff2) format("woff2")}
+@font-face{font-family:"TRC Nunito";font-weight:700;font-style:normal;font-display:swap;src:url(fonts/nunito-700.woff2) format("woff2")}
+@font-face{font-family:"TRC Nunito";font-weight:900;font-style:normal;font-display:swap;src:url(fonts/nunito-900.woff2) format("woff2")}
+
+:root{
+  --navy:#163445; --navy-d:#0b1b26; --navy-m:#21495f;
+  --gold:#E9C778; --gold-l:#F4D27C; --sky:#C4D5E0; --pale:#E2EAD1; --tan:#E0B49B;
+  --steel:#98AAB8; --ink:#163445; --paper:#FFFFFF; --off:#4a6679;
+  --font:"TRC Nunito","Varela Round",ui-rounded,"Segoe UI",system-ui,-apple-system,sans-serif;
+  --ratio:.6;                                   /* ancho / alto de cada página */
+  --pw:min(92vw, calc(100dvh * .84 * var(--ratio)), 470px);
+  --dur:1.3s; --ease:cubic-bezier(.45,.05,.25,1);
+}
+@media (min-width:900px) and (min-height:560px){ :root{ --pw:min(47vw, calc(100dvh * .84 * var(--ratio)), 470px); } }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; min-height:100dvh; font-family:var(--font); font-weight:500; color:var(--paper);
+  background:radial-gradient(120% 90% at 50% 18%, var(--navy-m) 0%, var(--navy) 42%, var(--navy-d) 100%) fixed;
+  background-color:var(--navy);
+  overflow-x:hidden; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+#snow,#sparks{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#snow{z-index:0} #sparks{z-index:50}
+
+/* language toggle */
+.lang{position:fixed;z-index:20;top:calc(14px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(196,213,224,.28);backdrop-filter:blur(6px)}
+.lang button{border:0;background:transparent;padding:.4em .95em;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:.06em;color:var(--sky)}
+.lang button[aria-pressed="true"]{background:var(--gold);color:var(--navy)}
+
+/* stage + card */
+.stage{position:relative;z-index:2;min-height:100dvh;display:grid;place-items:center;
+  padding:calc(64px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px))}
+.card{position:relative;width:var(--pw);container-type:inline-size;perspective:2400px;
+  transition:transform var(--dur) var(--ease)}
+.card.spread.is-open{transform:translateX(calc(var(--pw) / 2))}
+
+.page{position:relative;border-radius:6px;overflow:hidden}
+.right{background:var(--paper);color:var(--ink);min-height:calc(var(--pw) / var(--ratio));
+  box-shadow:0 28px 60px rgba(0,0,0,.42),0 4px 14px rgba(0,0,0,.25);display:flex;flex-direction:column}
+.cover{position:absolute;inset:0;transform-origin:left center;transform-style:preserve-3d;z-index:3;
+  transition:transform var(--dur) var(--ease),opacity .6s ease}
+.card.spread.is-open .cover{transform:rotateY(-180deg)}
+.card:not(.spread).is-open .cover{transform:rotateY(-96deg);opacity:0;pointer-events:none;transition:transform 1s var(--ease),opacity .6s ease .3s}
+.face{position:absolute;inset:0;border-radius:6px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+/* Safari can still paint animated children on the reverse of the cover.
+   Swap face visibility at the halfway point of the page turn as well. */
+.front,.back{transition:visibility 0s linear calc(var(--dur) * .5)}
+.front{visibility:visible}
+.back{visibility:hidden}
+.card.is-open .front{visibility:hidden;pointer-events:none}
+.card.spread.is-open .back{visibility:visible}
+.front{background:radial-gradient(80% 46% at 50% 36%, #214d66 0%, var(--navy) 74%);color:var(--paper);
+  box-shadow:0 28px 60px rgba(0,0,0,.5),0 0 0 1px rgba(196,213,224,.14);display:flex;flex-direction:column;align-items:center;padding:5.5cqw 6cqw 0}
+.back{transform:rotateY(180deg);background:var(--navy);color:var(--paper);
+  box-shadow:0 28px 60px rgba(0,0,0,.42),0 4px 14px rgba(0,0,0,.25)}
+.card:not(.spread) .back{display:none}
+
+canvas.decor{position:absolute;display:block;pointer-events:none;animation:twinkle 6s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.82}50%{opacity:1}}
+
+/* ---------- cover: the tree ---------- */
+.logo{width:21cqw;height:auto;display:block;position:relative;z-index:2;animation:rise .9s .1s both}
+.tree{position:relative;z-index:2;width:76cqw;margin-top:5cqw;animation:rise 1.1s .25s both}
+.tree svg{display:block;width:100%;height:auto;overflow:visible;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.lt{cursor:pointer;outline:none}
+.lt .pf{fill:var(--off);transform-box:fill-box;transform-origin:center;transition:transform .3s ease,fill .45s ease}
+.lt.on .pf{fill:var(--c)}
+.lt:hover .pf{transform:scale(1.22)}
+.lt.pop .pf{animation:lpop .65s ease}
+@keyframes lpop{0%{transform:scale(1)}35%{transform:scale(1.55)}100%{transform:scale(1)}}
+.hc{opacity:0;transition:opacity .5s ease;pointer-events:none}
+.hc.on{opacity:1}
+.hc.pop{animation:hpop .65s ease}
+@keyframes hpop{0%{opacity:1}35%{opacity:1;filter:brightness(1.8)}100%{opacity:1}}
+.star{cursor:pointer;outline:none}
+.star .sh,.star .sbody{pointer-events:none}
+.star .sbody{opacity:.22;transition:opacity 1.1s ease,transform .5s ease;transform-box:fill-box;transform-origin:center}
+.star.on .sbody{opacity:1}
+.star:hover .sbody{transform:scale(1.06)}
+.star:focus-visible .sbody{filter:drop-shadow(0 0 6px #fff)}
+.star .sh{opacity:0;transition:opacity 1.2s ease;transform-box:fill-box;transform-origin:center}
+.star.on .sh{opacity:1;animation:breathe 4.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.78;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
+.star.pop .sbody{animation:spop .9s ease}
+@keyframes spop{0%{transform:scale(1)}30%{transform:scale(1.18)}100%{transform:scale(1)}}
+.star.flare .sh{animation:flare 2.2s ease-out}
+@keyframes flare{0%{opacity:1;transform:scale(1)}25%{opacity:1;transform:scale(1.6)}100%{opacity:.85;transform:scale(1)}}
+.sk{transform-box:fill-box;transform-origin:center;animation:tw2 3.2s ease-in-out infinite}
+@keyframes tw2{0%,100%{opacity:.25;transform:scale(.65)}50%{opacity:1;transform:scale(1.15)}}
+
+.titles{position:relative;z-index:2;text-align:center;animation:rise 1.1s .45s both;width:100%}
+.t1{margin:2.5cqw 0 0;font-weight:900;font-size:clamp(21px,6.1cqw,30px);line-height:1.12;text-wrap:balance}
+.t2{margin:1.2cqw 0 0;font-weight:500;font-size:clamp(15px,4.4cqw,22px);line-height:1.25;color:var(--pale)}
+.rule{width:13cqw;height:3px;border-radius:2px;background:var(--gold);margin:4cqw auto 3cqw}
+.wish{margin:0;font-weight:700;font-size:clamp(12px,3cqw,16px);color:var(--sky)}
+.btn-open{position:relative;z-index:2;margin-top:4.5cqw;padding:.7em 1.6em;border-radius:999px;border:1.5px solid var(--gold);
+  color:var(--gold);background:rgba(233,199,120,.08);font-weight:700;font-size:clamp(14px,3.5cqw,17px);
+  transition:background .25s,color .25s,transform .25s;animation:rise 1.1s .6s both}
+.btn-open:hover{background:var(--gold);color:var(--navy);transform:translateY(-2px)}
+.hint{position:absolute;z-index:3;left:6cqw;right:6cqw;bottom:5cqw;margin:0;text-align:center;font-size:clamp(12px,2.5cqw,14px);color:var(--steel)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---------- inside: navy panel (left) ---------- */
+.body{position:relative;z-index:2;font-size:clamp(14px,3cqw,17px);line-height:1.52}
+.card:not(.revealed) .body{display:none}
+.left-body{position:absolute;inset:0}
+.panel{position:relative;background:var(--navy);color:var(--paper);display:flex;flex-direction:column;align-items:center;padding:8cqw 10cqw 28cqw;overflow:hidden}
+.card.spread .panel{height:100%}
+.panel canvas.decor{left:0;bottom:0;width:100%;height:24cqw}
+.emblem{position:relative;width:32cqw;margin:0 auto 1cqw;background:none;border:0;padding:0;display:block;-webkit-tap-highlight-color:transparent}
+.emblem svg{width:100%;height:auto;display:block;overflow:visible;position:relative;transition:transform .4s}
+.emblem:hover svg{transform:scale(1.07)}
+.halo{position:absolute;left:50%;top:50%;width:92cqw;height:92cqw;transform:translate(-50%,-50%);pointer-events:none;
+  background:radial-gradient(circle,rgba(255,217,120,.34) 0%,rgba(255,217,120,.12) 30%,rgba(255,217,120,0) 60%);animation:breathe2 4.6s ease-in-out infinite}
+@keyframes breathe2{0%,100%{opacity:.78;transform:translate(-50%,-50%) scale(.96)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}}
+.emblem.pulse svg{animation:pop .9s ease}
+@keyframes pop{0%{transform:scale(1)}30%{transform:scale(1.14)}100%{transform:scale(1)}}
+.kicker{position:relative;margin:2cqw 0 6cqw;font-weight:700;letter-spacing:.18em;font-size:clamp(11px,2.5cqw,14px);color:var(--gold)}
+.stats{position:relative;width:100%;display:flex;flex-direction:column}
+.stat{display:grid;grid-template-columns:31cqw 1fr;align-items:center;gap:2cqw;padding:4.6cqw 0;border-top:1px solid rgba(196,213,224,.22)}
+.stat:first-child{border-top:0}
+.num{justify-self:start;background:none;border:0;padding:0;text-align:left;font-weight:900;font-size:clamp(34px,12.6cqw,62px);line-height:1;color:var(--gold);font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent;transition:transform .25s}
+.num:hover{transform:scale(1.06)}
+.lab{font-weight:700;font-size:clamp(13px,3.1cqw,17px);line-height:1.32;color:var(--paper)}
+
+/* ---------- inside: white message page (right) ---------- */
+.right-body{flex:1;display:flex;flex-direction:column;padding:0}
+.txt{flex:1;display:flex;flex-direction:column;padding:11cqw 12.9cqw 8cqw}
+.card:not(.spread) .txt{padding-top:10cqw}
+.lead{font-size:clamp(15px,3.3cqw,18px)}
+.greet{margin:0;font-weight:900;font-size:clamp(24px,6.6cqw,32px);line-height:1.15;color:var(--ink)}
+.rule-d{width:12.9cqw;height:4px;border-radius:2px;background:var(--gold);margin:3cqw 0 5cqw}
+.p{margin:0 0 5cqw;color:var(--ink)}
+.sign{margin-top:8cqw}
+.sign .ln{width:42cqw;height:2px;background:#B8C4CC;margin-bottom:2.4cqw}
+.sign b{display:block;font-weight:700;font-size:clamp(14px,3cqw,17px);color:var(--ink)}
+.sign span{display:block;font-size:clamp(12px,2.5cqw,14px);color:var(--ink)}
+.foot{margin-top:auto;padding-top:7cqw;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.foot img{width:27cqw;height:auto;display:block}
+.foot a{color:var(--ink);font-weight:700;font-size:clamp(12px,2.6cqw,14px);text-decoration:none;border-bottom:2px solid var(--gold)}
+.btn-close{margin-top:4cqw;align-self:flex-start;padding:.55em 1.3em;border-radius:999px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:clamp(13px,2.8cqw,15px);transition:background .25s,color .25s}
+.btn-close:hover{background:var(--ink);color:#fff}
+.ri{opacity:0;transform:translateY(12px);transition:opacity .8s ease,transform .8s ease}
+.card.shown .ri{opacity:1;transform:none}
+.card.shown .ri:nth-child(2){transition-delay:.12s}.card.shown .ri:nth-child(3){transition-delay:.24s}.card.shown .ri:nth-child(4){transition-delay:.36s}.card.shown .ri:nth-child(5){transition-delay:.48s}.card.shown .ri:nth-child(6){transition-delay:.6s}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;transition-delay:0s!important}
+  .ri{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="gP" gradientUnits="userSpaceOnUse" x1="0" y1="-42" x2="0" y2="4"><stop offset="0" stop-color="#fffbea"/><stop offset="1" stop-color="#efc974"/></linearGradient>
+    <linearGradient id="gP2" gradientUnits="userSpaceOnUse" x1="0" y1="-42" x2="0" y2="4"><stop offset="0" stop-color="#fffbea"/><stop offset="1" stop-color="#efc974"/></linearGradient>
+    <filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2"/></filter>
+    <radialGradient id="sa"><stop offset="0" stop-color="#ffd978" stop-opacity=".55"/><stop offset=".5" stop-color="#ffd978" stop-opacity=".16"/><stop offset="1" stop-color="#ffd978" stop-opacity="0"/></radialGradient>
+    <radialGradient id="sb"><stop offset="0" stop-color="#fff1c1" stop-opacity=".7"/><stop offset="1" stop-color="#fff1c1" stop-opacity="0"/></radialGradient>
+    <g id="pp"><path d="M-36.3,-30.3 L-33.7,-25.2 L-31.0,-20.6 L-28.2,-16.3 L-25.4,-12.4 L-22.6,-8.9 L-19.7,-5.8 L-16.7,-3.2 L-13.6,-0.9 L-10.4,1.0 L-7.0,2.4 L-3.6,3.2 L0.0,3.5 L3.6,3.2 L7.0,2.4 L10.4,1.0 L13.6,-0.9 L16.7,-3.2 L19.7,-5.8 L22.6,-8.9 L25.4,-12.4 L28.2,-16.3 L31.0,-20.6 L33.7,-25.2 L36.3,-30.3 L36.3,-30.3 L38.1,-36.8 L33.3,-31.2 L34.3,-37.4 L30.1,-32.8 L30.5,-37.9 L26.9,-34.4 L25.7,-35.7 L25.7,-35.7 L23.2,-31.0 L20.7,-26.8 L18.3,-23.0 L15.9,-19.7 L13.6,-16.8 L11.3,-14.4 L9.1,-12.4 L7.0,-10.9 L5.1,-9.8 L3.3,-9.0 L1.6,-8.6 L0.0,-8.5 L-1.6,-8.6 L-3.3,-9.0 L-5.1,-9.8 L-7.0,-10.9 L-9.1,-12.4 L-11.3,-14.4 L-13.6,-16.8 L-15.9,-19.7 L-18.3,-23.0 L-20.7,-26.8 L-23.2,-31.0 L-25.7,-35.7 L-25.7,-35.7 L-29.9,-40.9 L-28.2,-33.8 L-32.6,-38.2 L-31.4,-32.1 L-35.3,-35.5 L-34.6,-30.5 L-36.3,-30.3 Z"/><circle cx="0.0" cy="-27.0" r="11.8"/></g>
+  </defs>
+</svg>
+
+<canvas id="snow" aria-hidden="true"></canvas>
+<canvas id="sparks" aria-hidden="true"></canvas>
+
+<div class="lang" role="group" aria-label="Langue / Language">
+  <button type="button" data-l="fr" aria-pressed="true">FR</button>
+  <button type="button" data-l="en" aria-pressed="false">EN</button>
+</div>
+
+<main class="stage">
+  <div class="card" id="card">
+    <!-- right inner page: white message (in narrow mode also holds the navy panel on top) -->
+    <section class="page right" id="rightPage" aria-label="Message">
+      <div class="body right-body" id="rightBody">
+        <div id="slotA"></div>
+        <div class="txt">
+          <h2 class="greet ri" data-k="greet"></h2>
+          <div class="rule-d ri"></div>
+          <p class="p lead ri" data-k="p1"></p>
+          <p class="p lead ri" data-k="p2"></p>
+          <p class="p lead ri" style="margin-bottom:0" data-k="close"></p>
+          <div class="sign ri">
+            <div class="ln"></div>
+            <b data-k="sname"></b>
+            <span data-k="stitle"></span>
+          </div>
+          <div class="foot ri">
+            <div><img src="img/logo-marine.png" alt="Le Centre de réfugiés · The Refugee Centre" width="420" height="256"></div>
+            <a href="https://therefugeecentre.org" target="_blank" rel="noopener">therefugeecentre.org</a>
+          </div>
+          <button type="button" class="btn-close ri" id="btnClose" data-k="closeCard"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- cover (front = tree, back = navy panel in spread mode) -->
+    <div class="cover" id="cover">
+      <div class="face front" id="front">
+        <img class="logo" src="img/logo-blanc.png" alt="Le Centre de réfugiés · The Refugee Centre" width="420" height="256">
+        <div class="tree">
+          <svg id="treeSvg" viewBox="20 82 400 396" role="group" data-ka="treeLabel">
+            <defs id="treeDefs"></defs>
+            <g id="halos"></g>
+            <g id="people"></g>
+            <g id="sparkles" aria-hidden="true"></g>
+            <g class="star" id="star" transform="translate(220 130)" tabindex="0" role="button" data-ka="starLabel">
+              <circle class="sh" r="125" fill="url(#sa)"/>
+              <circle class="sh" r="60" fill="url(#sb)"/>
+              <g class="sbody">
+                <g filter="url(#bloom)" opacity=".9" fill="#ffe7a0" transform="scale(.95)"><use href="#pp"/></g>
+                <use href="#pp" transform="scale(.95)" fill="url(#gP)"/>
+              </g>
+              <circle r="40" cy="-4" fill="transparent"/>
+            </g>
+          </svg>
+        </div>
+        <div class="titles">
+          <h1 class="t1" data-k="t1"></h1>
+          <p class="t2" data-k="t2"></p>
+          <div class="rule"></div>
+          <p class="wish" data-k="wish"></p>
+        </div>
+        <button type="button" class="btn-open" id="btnOpen" aria-expanded="false" data-k="openCard"></button>
+        <p class="hint" data-k="hint"></p>
+      </div>
+      <div class="face back" id="backFace">
+        <div class="body left-body" id="leftBody"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- navy panel: glowing person + kicker + 3 figures (JS moves it between left page / right page) -->
+<div hidden>
+  <div class="panel" id="panel">
+    <canvas class="decor" id="decPanel" aria-hidden="true"></canvas>
+    <button type="button" class="emblem ri" id="emblem" data-ka="emblemLabel">
+      <span class="halo"></span>
+      <svg viewBox="-44 -48 88 60" aria-hidden="true">
+        <g filter="url(#bloom)" opacity=".8" fill="#ffe7a0"><use href="#pp"/></g>
+        <use href="#pp" fill="url(#gP2)"/>
+      </svg>
+    </button>
+    <p class="kicker ri" data-k="kicker"></p>
+    <div class="stats ri">
+      <div class="stat"><button type="button" class="num" data-n="10" data-ka="replayLabel">10</button><span class="lab" data-k="s1"></span></div>
+      <div class="stat"><button type="button" class="num" data-n="87" data-suf="+" data-ka="replayLabel">87+</button><span class="lab" data-k="s2"></span></div>
+      <div class="stat"><button type="button" class="num" data-n="50" data-suf="+" data-ka="replayLabel">50+</button><span class="lab" data-k="s3"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+/* ====== EDIT HERE: texts & signatory ====== */
+const T={
+ fr:{
+  t1:'Merci d’éclairer le chemin', t2:'Thank you for lighting the way', wish:'Joyeuses fêtes  ·  Happy holidays',
+  openCard:'Ouvrir la carte', closeCard:'Fermer la carte',
+  hint:'Touchez les lumières · Soufflez sur la neige',
+  treeLabel:'Sapin de 44 petites lumières', starLabel:'Allumer tout le sapin', lightN:'Lumière',
+  emblemLabel:'Faire briller la lumière', replayLabel:'Rejouer le compteur',
+  kicker:'ENSEMBLE',
+  greet:'Chers partenaires,',
+  p1:'Cette année encore, vous avez été à nos côtés. Votre confiance, votre générosité et votre engagement envers les personnes réfugiées et immigrantes font toute la différence.',
+  s1:'ans au service des personnes réfugiées et immigrantes', s2:'pays d’origine parmi les personnes accompagnées', s3:'personnes hébergées grâce à notre logement transitoire',
+  p2:'C’est grâce à des partenaires comme vous que nous pouvons offrir un accueil chaleureux. Toute l’équipe vous remercie du fond du cœur et vous souhaite de joyeuses fêtes, remplies de chaleur et de paix.',
+  close:'Avec toute notre reconnaissance,', sname:'[Prénom Nom]', stitle:'[Titre] · Le Centre de réfugiés'
+ },
+ en:{
+  t1:'Thank you for lighting the way', t2:'Merci d’éclairer le chemin', wish:'Happy holidays  ·  Joyeuses fêtes',
+  openCard:'Open the card', closeCard:'Close the card',
+  hint:'Tap the lights · Blow on the snow',
+  treeLabel:'Tree of 44 little lights', starLabel:'Light up the whole tree', lightN:'Light',
+  emblemLabel:'Make the light shine', replayLabel:'Replay the counter',
+  kicker:'TOGETHER',
+  greet:'Dear partners,',
+  p1:'Once again this year, you stood by our side. Your trust, your generosity and your commitment to the refugees and newcomers we support make all the difference.',
+  s1:'years supporting refugees and newcomers', s2:'countries of origin among those we support', s3:'newcomers housed in our transitional housing',
+  p2:'It is thanks to partners like you that we can offer a warm welcome. Our entire team thanks you from the bottom of our hearts and wishes you a joyful holiday season, filled with warmth and peace.',
+  close:'With our deepest gratitude,', sname:'[First Last]', stitle:'[Title] · The Refugee Centre'
+ }
+};
+/* ====== tree geometry: [x, y, colour index, row] in SVG units (100 = 1 in) ====== */
+const FIGS=[[200.0, 185.0, 0, 0], [240.8, 185.0, 3, 0], [180.2, 222.0, 7, 1], [221.1, 222.0, 2, 1], [261.1, 222.0, 5, 1], [160.3, 259.0, 1, 2], [198.6, 259.0, 4, 2], [240.2, 259.0, 7, 2], [281.8, 259.0, 2, 2], [139.4, 296.0, 6, 3], [180.5, 296.0, 1, 3], [219.1, 296.0, 4, 3], [260.4, 296.0, 7, 3], [300.4, 296.0, 2, 3], [118.9, 333.0, 6, 4], [159.4, 333.0, 1, 4], [198.6, 333.0, 4, 4], [239.6, 333.0, 7, 4], [280.2, 333.0, 2, 4], [322.2, 333.0, 5, 4], [99.1, 370.0, 1, 5], [138.2, 370.0, 4, 5], [180.2, 370.0, 7, 5], [219.1, 370.0, 2, 5], [260.8, 370.0, 5, 5], [300.1, 370.0, 0, 5], [340.3, 370.0, 3, 5], [79.1, 407.0, 7, 6], [118.1, 407.0, 2, 6], [158.6, 407.0, 5, 6], [200.9, 407.0, 0, 6], [241.1, 407.0, 3, 6], [280.2, 407.0, 6, 6], [322.4, 407.0, 1, 6], [361.8, 407.0, 4, 6], [58.4, 444.0, 0, 7], [97.8, 444.0, 3, 7], [140.1, 444.0, 6, 7], [180.0, 444.0, 1, 7], [221.1, 444.0, 4, 7], [261.4, 444.0, 7, 7], [300.5, 444.0, 2, 7], [341.2, 444.0, 5, 7], [381.2, 444.0, 0, 7]];
+const COLS=['#e9c778','#fff1c1','#e0b49b','#c4d5e0','#e9c778','#e2ead1','#ffffff','#e9c778'];
+const PERSON=.47;      /* scale of each little person on the tree */
+/* ========================================= */
+
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+const card=$('#card'), panel=$('#panel'), slotA=$('#slotA'), leftBody=$('#leftBody');
+let lang='fr';
+
+/* ---- language ---- */
+function applyLang(l){
+  lang=l; document.documentElement.lang=l;
+  $$('[data-k]').forEach(el=>{ const v=T[l][el.dataset.k]; if(v!==undefined) el.textContent=v; });
+  $$('[data-ka]').forEach(el=>{ el.setAttribute('aria-label',T[l][el.dataset.ka]); });
+  $$('.lang button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.l===l)));
+  document.title=T[l].t1+' · '+(l==='fr'?'Le Centre de réfugiés':'The Refugee Centre');
+}
+$$('.lang button').forEach(b=>b.addEventListener('click',()=>applyLang(b.dataset.l)));
+
+/* ---- build the tree ---- */
+const NS='http://www.w3.org/2000/svg';
+const halosG=$('#halos'), peopleG=$('#people'), sparkG=$('#sparkles'), starEl=$('#star');
+$('#treeDefs').innerHTML=COLS.map((c,i)=>`<radialGradient id="h${i}"><stop offset="0" stop-color="${c}" stop-opacity=".42"/><stop offset=".55" stop-color="${c}" stop-opacity=".12"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`).join('');
+const figs=FIGS.map(([x,y,ci,row],i)=>{
+  const h=document.createElementNS(NS,'circle'); h.setAttribute('class','hc'); h.setAttribute('cx',x); h.setAttribute('cy',y); h.setAttribute('r',34); h.setAttribute('fill',`url(#h${ci})`); halosG.appendChild(h);
+  const g=document.createElementNS(NS,'g'); g.setAttribute('class','lt'); g.setAttribute('transform',`translate(${x} ${y})`); g.style.setProperty('--c',COLS[ci]);
+  g.innerHTML=`<g class="pf"><use href="#pp" transform="scale(${PERSON})"/></g><circle r="21" fill="transparent"/>`;
+  peopleG.appendChild(g);
+  return {g,h,x,y,row,i};
+});
+/* decorative 4-point sparkles around the tree */
+[[55,180,10,'#e9c778'],[385,150,12,'#fff6d0'],[30,320,7,'#fff6d0'],[410,280,8,'#e9c778'],[390,410,6,'#fff6d0'],[45,430,8,'#e9c778'],[290,95,6,'#e9c778'],[150,110,5,'#fff6d0']].forEach(([x,y,r,c],i)=>{
+  const k=r*.2, p=document.createElementNS(NS,'path');
+  p.setAttribute('d',`M${x},${y-r}Q${x+k},${y-k} ${x+r},${y}Q${x+k},${y+k} ${x},${y+r}Q${x-k},${y+k} ${x-r},${y}Q${x-k},${y-k} ${x},${y-r}Z`);
+  p.setAttribute('fill',c); p.setAttribute('class','sk'); p.style.animationDelay=(i*.55)+'s'; p.style.animationDuration=(2.6+i%3*.7)+'s'; sparkG.appendChild(p);
+});
+applyLang('fr');
+
+/* ---- layout (spread on wide screens, single page on narrow) ---- */
+const mqSpread=matchMedia('(min-width:900px) and (min-height:560px)');
+function layout(){
+  const spread=mqSpread.matches;
+  card.classList.toggle('spread',spread);
+  (spread?leftBody:slotA).appendChild(panel);
+}
+layout(); mqSpread.addEventListener('change',()=>{layout(); paintAll();});
+
+/* ====== flakes ====== */
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function drawFlake(ctx,cx,cy,r,col,kind,rot,sw){
+  if(kind==='dot'){ctx.fillStyle=col;ctx.beginPath();ctx.arc(cx,cy,r*0.22,0,6.2832);ctx.fill();return}
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=sw;ctx.lineCap='round';
+  for(let i=0;i<6;i++){
+    const a=rot+i*Math.PI/3, ex=cx+r*Math.cos(a), ey=cy+r*Math.sin(a);
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);
+    const brs=kind==='A'?[[.42,.30],[.68,.22]]:[[.55,.28]];
+    for(const [t,l] of brs){
+      const bx=cx+r*t*Math.cos(a), by=cy+r*t*Math.sin(a);
+      for(const s of [-1,1]){const b=a+s*Math.PI/3.2;ctx.moveTo(bx,by);ctx.lineTo(bx+r*l*Math.cos(b),by+r*l*Math.sin(b));}
+    }
+    ctx.stroke();
+    if(kind==='A'){ctx.beginPath();ctx.arc(cx+r*1.08*Math.cos(a),cy+r*1.08*Math.sin(a),sw*.9,0,6.2832);ctx.fill();}
+  }
+  ctx.beginPath();ctx.arc(cx,cy,sw*1.5,0,6.2832);ctx.fill();
+}
+
+/* ---- decorative bands ---- */
+const PAL_NAVY=['#E2EAD1','#C4D5E0','#ffffff','#E9C778','#E0B49B'], W_NAVY=[4,5,2,1.4,1.2];
+const PAL_WHITE=['#7ea3bb','#E0B49B','#a9c2d3','#E9C778'], W_WHITE=[5,3,3,1.4];
+function pick(rng,pal,w){let t=w.reduce((a,b)=>a+b,0)*rng(),i=0;for(;i<w.length-1;i++){t-=w[i];if(t<=0)break}return pal[i]}
+function paintDecor(cv,{edge,pal,w,seed,dens,rmin,rmax}){
+  const cw=cv.clientWidth, ch=cv.clientHeight; if(!cw||!ch) return;
+  const dpr=Math.min(devicePixelRatio||1,2); cv.width=cw*dpr; cv.height=ch*dpr;
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cw,ch);
+  const rng=mulberry(seed), placed=[]; const n=Math.round(dens*cw*ch/10000); let tries=0;
+  while(placed.length<n && tries<n*50){
+    tries++; const x=rng()*cw*1.04-cw*.02; const u=Math.pow(rng(),1.55);
+    const y=edge==='top'?u*ch:ch-u*ch; const r=(rmin+(rmax-rmin)*Math.pow(rng(),1.6))*cw;
+    if(placed.every(p=>(x-p[0])**2+(y-p[1])**2>(r+p[2])**2*.86)) placed.push([x,y,r]);
+  }
+  for(const [x,y,r] of placed){
+    const kind=['A','B','dot'][rng()<.12?2:(rng()<.5?0:1)];
+    ctx.globalAlpha=.55+.4*rng(); drawFlake(ctx,x,y,r,pick(rng,pal,w),kind,rng()*Math.PI/3,Math.max(r*.07,.8));
+  }
+  ctx.globalAlpha=1;
+}
+function paintAll(){
+  paintDecor($('#decPanel'),{edge:'bottom',pal:PAL_NAVY,w:W_NAVY,seed:5,dens:34,rmin:.024,rmax:.065});
+}
+
+/* ====== falling snow (canvas) + sparkles ====== */
+const snowC=$('#snow'), sparkC=$('#sparks'), sc=snowC.getContext('2d'), pc=sparkC.getContext('2d');
+let W=0,H=0,DPR=1, flakes=[]; const sprites=new Map();
+const SNOW_COLS=['#E2EAD1','#C4D5E0','#ffffff','#ffffff','#E9C778','#E0B49B'];
+function sprite(kind,col,r){
+  const k=kind+col+r; let s=sprites.get(k); if(s) return s;
+  const size=Math.ceil(r*2.7), c=document.createElement('canvas'); c.width=c.height=Math.ceil(size*DPR);
+  const x=c.getContext('2d'); x.scale(DPR,DPR); drawFlake(x,size/2,size/2,r,col,kind,0,Math.max(r*.09,1)); s={c,size}; sprites.set(k,s); return s;
+}
+function makeFlake(initial){
+  const r=Math.round(5+Math.pow(Math.random(),1.6)*12);
+  return {x:Math.random()*W,y:initial?Math.random()*H:-20-Math.random()*60,r,
+    kind:Math.random()<.5?'A':(Math.random()<.85?'B':'dot'),col:SNOW_COLS[Math.floor(Math.random()*SNOW_COLS.length)],
+    a:.32+Math.random()*.5,vy0:16+r*1.7+Math.random()*10,vx:0,vy:20+r,ph:Math.random()*6.28,rot:Math.random()*6.28,spin:(Math.random()-.5)*.8};
+}
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight;
+  for(const c of [snowC,sparkC]){c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px'}
+  sc.setTransform(DPR,0,0,DPR,0,0); pc.setTransform(DPR,0,0,DPR,0,0); sprites.clear();
+  const n=Math.max(26,Math.min(90,Math.round(W*H/16500)));
+  while(flakes.length<n) flakes.push(makeFlake(true)); flakes.length=n;
+  flakes.forEach(f=>{f.vy=f.vy||f.vy0; if(f.x>W) f.x=Math.random()*W;});
+  if(RM.matches) drawSnowStatic();
+}
+function drawSnow(){
+  sc.clearRect(0,0,W,H);
+  for(const f of flakes){const s=sprite(f.kind,f.col,f.r); sc.globalAlpha=f.a; sc.save(); sc.translate(f.x,f.y); sc.rotate(f.rot); sc.drawImage(s.c,-s.size/2,-s.size/2,s.size,s.size); sc.restore();}
+  sc.globalAlpha=1;
+}
+function drawSnowStatic(){ drawSnow(); }
+
+/* sparkles */
+const sparks=[]; const SP_COLS=['#fff6d0','#E9C778','#F4D27C','#ffffff'];
+function emit(x,y,n,o={}){
+  if(RM.matches) return; const spd=o.spd||1, sz=o.size||1;
+  for(let i=0;i<n;i++){const a=Math.random()*6.2832, v=(30+Math.random()*150)*spd;
+    sparks.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-25*spd,life:0,max:(o.life||(.8+Math.random()*.8)),s:(3+Math.random()*6)*sz,c:SP_COLS[Math.floor(Math.random()*SP_COLS.length)],rot:Math.random()*3});}
+}
+function star(ctx,x,y,r,rot){
+  const k=r*.2; ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.beginPath();
+  ctx.moveTo(0,-r);ctx.quadraticCurveTo(k,-k,r,0);ctx.quadraticCurveTo(k,k,0,r);ctx.quadraticCurveTo(-k,k,-r,0);ctx.quadraticCurveTo(-k,-k,0,-r);ctx.fill();ctx.restore();
+}
+/* pointer wind */
+let last={x:-999,y:-999,t:0};
+function blow(x,y,vx,vy,strength){
+  const R=Math.max(110,Math.min(170,W*.12));
+  for(const f of flakes){const dx=f.x-x, dy=f.y-y, d=Math.hypot(dx,dy); if(d<R&&d>.01){const k=(1-d/R);
+    f.vx+=(dx/d)*k*170*strength+vx*k*.3; f.vy+=(dy/d)*k*110*strength+vy*k*.3;
+    f.vx=Math.max(-420,Math.min(420,f.vx)); f.vy=Math.max(-300,Math.min(420,f.vy));}}
+}
+function onMove(e){
+  const t=performance.now(), dt=Math.max(8,t-last.t), vx=(e.clientX-last.x)/dt*1000, vy=(e.clientY-last.y)/dt*1000;
+  if(last.t&&t-last.t<120){const sp=Math.hypot(vx,vy); if(sp>60) blow(e.clientX,e.clientY,vx,vy,Math.min(1.2,Math.max(.3,sp/500)));}
+  last={x:e.clientX,y:e.clientY,t:t};
+}
+function onDown(e){
+  if(e.target.closest&&e.target.closest('button,a')) return;
+  const x=e.clientX,y=e.clientY; let hit=null,hd=1e9;
+  for(const f of flakes){const d=Math.hypot(f.x-x,f.y-y); if(d<f.r*1.5+12&&d<hd){hit=f;hd=d}}
+  if(hit){emit(hit.x,hit.y,9,{spd:.8}); Object.assign(hit,makeFlake(false));}
+  else {emit(x,y,7,{spd:.8}); blow(x,y,0,0,1.6);}
+}
+addEventListener('pointermove',onMove,{passive:true});
+addEventListener('pointerdown',onDown,{passive:true});
+
+let prev=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-prev)/1000); prev=now;
+  if(!document.hidden){
+    const t=now/1000;
+    for(const f of flakes){
+      const drift=Math.sin(t*.55+f.ph)*14, k=Math.min(1,dt*.9);
+      f.vx+=(drift-f.vx)*k; f.vy+=(f.vy0-f.vy)*k; f.x+=f.vx*dt; f.y+=f.vy*dt; f.rot+=f.spin*dt;
+      if(f.y>H+24){f.x=Math.random()*W;f.y=-24;} if(f.x<-30)f.x=W+30; else if(f.x>W+30)f.x=-30;
+    }
+    drawSnow();
+    pc.clearRect(0,0,W,H);
+    if(sparks.length){
+      pc.globalCompositeOperation='lighter';
+      for(let i=sparks.length-1;i>=0;i--){const p=sparks[i]; p.life+=dt; if(p.life>=p.max){sparks.splice(i,1);continue}
+        p.vy+=70*dt; p.vx*=1-dt*1.2; p.vy*=1-dt*.6; p.x+=p.vx*dt; p.y+=p.vy*dt;
+        const a=1-p.life/p.max; pc.globalAlpha=a*(.65+.35*Math.sin(p.life*18+p.rot)); pc.fillStyle=p.c; star(pc,p.x,p.y,p.s*(.6+.4*a),p.rot+p.life*2);}
+      pc.globalAlpha=1; pc.globalCompositeOperation='source-over';
+    }
+  }
+  requestAnimationFrame(frame);
+}
+resize(); addEventListener('resize',()=>{clearTimeout(resize.t);resize.t=setTimeout(()=>{resize();paintAll();},150)});
+if(!RM.matches) requestAnimationFrame(frame);
+
+/* ====== interactions ====== */
+const emblem=$('#emblem');
+function centerOf(el,fy=.5){const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height*fy}}
+function pulse(el,cls='pulse',ms=950){el.classList.remove(cls);void el.getBoundingClientRect();el.classList.add(cls);setTimeout(()=>el.classList.remove(cls),ms)}
+const starCenter=()=>{const r=$('.sbody',starEl).getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height*.45}};
+
+function setLight(f,on){f.g.classList.toggle('on',on); f.h.classList.toggle('on',on);}
+const litCount=()=>figs.filter(f=>f.g.classList.contains('on')).length;
+let celebrated=false;
+function celebrate(){
+  celebrated=true; starEl.classList.add('on'); pulse(starEl,'flare',2300); pulse(starEl,'pop',950);
+  const c=starCenter(); emit(c.x,c.y,70,{spd:1.6});
+}
+function checkAll(){
+  const all=litCount()===figs.length;
+  if(all&&!celebrated) celebrate(); else if(!all&&celebrated) celebrated=false;
+}
+
+/* tap a little person: switch it on/off */
+$('#treeSvg').addEventListener('click',e=>{
+  const g=e.target.closest('.lt'); if(g){
+    const f=figs.find(x=>x.g===g), on=!g.classList.contains('on');
+    setLight(f,on); pulse(g,'pop',700); pulse(f.h,'pop',700);
+    if(on){const c=centerOf(g); emit(c.x,c.y,10,{spd:.7,size:.8});}
+    checkAll(); return;
+  }
+  if(e.target.closest('.star')) wave();
+});
+starEl.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wave();}});
+
+/* tap the star (or press Enter on it): a wave of light runs down the tree */
+let waving=false;
+function wave(){
+  if(waving) return; waving=true;
+  starEl.classList.add('on'); pulse(starEl,'pop',950); pulse(starEl,'flare',2300);
+  const s=starCenter(); emit(s.x,s.y,46,{spd:1.4});
+  const rows=[...new Set(figs.map(f=>f.row))];
+  const step=RM.matches?0:110;
+  rows.forEach(r=>setTimeout(()=>{
+    figs.filter(f=>f.row===r).forEach((f,k)=>{
+      setLight(f,true); pulse(f.g,'pop',700); pulse(f.h,'pop',700);
+      if(k%2===0){const c=centerOf(f.g); emit(c.x,c.y,4,{spd:.6,size:.7});}
+    });
+    if(r===rows[rows.length-1]){waving=false; checkAll();}
+  },r*step+160));
+}
+
+/* the tree lights itself up once, bottom to top, then the star */
+function lightUp(){
+  const order=[...figs].sort((a,b)=>b.row-a.row||Math.random()-.5);
+  if(RM.matches){order.forEach(f=>setLight(f,true)); starEl.classList.add('on'); celebrated=true; return;}
+  order.forEach((f,k)=>setTimeout(()=>setLight(f,true),500+k*42));
+  setTimeout(()=>{starEl.classList.add('on'); pulse(starEl,'flare',2300); const c=starCenter(); emit(c.x,c.y,50,{spd:1.4}); celebrated=true;},500+order.length*42+250);
+}
+lightUp();
+
+/* gentle idle twinkle while the card is closed */
+setInterval(()=>{ if(RM.matches||document.hidden||card.classList.contains('is-open')) return;
+  const lit=figs.filter(f=>f.g.classList.contains('on')); if(lit.length){const f=lit[Math.floor(Math.random()*lit.length)];
+    pulse(f.g,'pop',700); const c=centerOf(f.g); emit(c.x,c.y,1,{spd:.2,size:.8,life:1.3});}
+  const s=starCenter(); emit(s.x+(Math.random()-.5)*50,s.y+(Math.random()-.5)*40,1,{spd:.25,size:.9,life:1.5}); },1000);
+
+/* glowing person inside + replayable counters */
+emblem.addEventListener('click',()=>{pulse(emblem);const c=centerOf(emblem,.45);emit(c.x,c.y,16,{spd:1})});
+function countOne(el){
+  const n=+el.dataset.n, suf=el.dataset.suf||''; if(RM.matches){el.textContent=n+suf;return}
+  const t0=performance.now(), D=1600; el.textContent='0'+suf;
+  (function step(t){const p=Math.min(1,(t-t0)/D), e=1-Math.pow(1-p,3); el.textContent=Math.round(n*e)+suf; if(p<1) requestAnimationFrame(step)})(t0);
+}
+$$('.num').forEach(el=>el.addEventListener('click',()=>{countOne(el);const c=centerOf(el);emit(c.x,c.y,10,{spd:.8,size:.9})}));
+
+/* open / close */
+const btnOpen=$('#btnOpen'), btnClose=$('#btnClose');
+let openTimer=0, closeTimer=0;
+function openCard(){
+  if(card.classList.contains('is-open')) return;
+  clearTimeout(closeTimer); layout(); card.classList.add('revealed'); paintAll();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    card.classList.add('is-open'); btnOpen.setAttribute('aria-expanded','true');
+    const c=starCenter(); emit(c.x,c.y,40,{spd:1.4});
+    openTimer=setTimeout(()=>{card.classList.add('shown'); $$('.num').forEach(countOne); if(!card.classList.contains('spread')) window.scrollTo({top:0,behavior:RM.matches?'auto':'smooth'}); },RM.matches?0:850);
+  }));
+}
+function closeCard(){
+  if(!card.classList.contains('is-open')) return;
+  clearTimeout(openTimer); card.classList.remove('shown','is-open'); btnOpen.setAttribute('aria-expanded','false');
+  window.scrollTo({top:0,behavior:RM.matches?'auto':'smooth'});
+  closeTimer=setTimeout(()=>card.classList.remove('revealed'),RM.matches?0:1400); btnOpen.focus({preventScroll:true});
+}
+btnOpen.addEventListener('click',openCard); btnClose.addEventListener('click',closeCard);
+addEventListener('keydown',e=>{if(e.key==='Escape') closeCard();});
+
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(paintAll); paintAll();
+})();
+</script>
+</body>
+</html>
